@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Milk Pro 手表模拟器</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui, sans-serif}
+body{
+  min-height:100vh;
+  background:#1c1c1c;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+  background-image: radial-gradient(#2b2b2b 1px, transparent 1px);
+  background-size:24px 24px;
+}
+#watchWrap{
+  position:relative;
+  perspective: 1000px;
+}
+.strap{
+  position:absolute;
+  width:32px;
+  height:170px;
+  background:#272727;
+  left:calc(50% - 16px);
+  z-index:-1;
+}
+.strap-top{
+  top:-145px;
+  border-radius:10px 10px 0 0;
+}
+.strap-bottom{
+  bottom:-145px;
+  border-radius:0 0 10px 10px;
+}
+#watch{
+  width:420px;height:420px;
+  border-radius:50%;
+  position:relative;
+  background:linear-gradient(145deg,#444,#181818);
+  box-shadow:
+    0 0 0 14px #404040,
+    0 0 0 20px #222,
+    0 20px 55px rgba(0,0,0,0.8);
+  overflow:hidden;
+  transform-style:preserve-3d;
+  user-select:none;
+}
+#screen{
+  width:84%;height:84%;
+  position:absolute;
+  top:8%;left:8%;
+  border-radius:50%;
+  background:#000;
+  color:#fff;
+  overflow:hidden;
+}
+.anim-overlay{
+  position:absolute;inset:0;
+  background:#000;
+  display:flex;align-items:center;justify-content:center;
+  font-size:64px;font-weight:bold;
+  z-index:200;
+  pointer-events:none;
+}
+.boot-text{
+  opacity:0;
+  transition:opacity 3s ease-out;
+}
+.shutdown-text{
+  font-size:64px;
+  opacity:1;
+  animation:melt 5s forwards;
+}
+@keyframes melt{
+  0%{opacity:1;transform:translateY(0);filter:blur(0)}
+  70%{opacity:0.55;transform:translateY(32px);filter:blur(9px)}
+  100%{opacity:0;transform:translateY(65px);filter:blur(18px)}
+}
+.page{
+  position:absolute;inset:0;
+  padding:20px;
+  display:none;
+  overflow:auto;
+}
+.page.active{display:block}
+.back-btn{
+  position:absolute;
+  top:10px;
+  left:12px;
+  padding:4px 10px;
+  background:#333;
+  border-radius:6px;
+  font-size:14px;
+  z-index:10;
+  cursor:pointer;
+}
+.dial-wrap{
+  width:100%;height:100%;
+  position:relative;
+  overflow:hidden;
+}
+/* 表盘1 小熊软糖 */
+.dial-1{
+  background:#ffe8ef;
+  color:#9b4068;
+}
+.bear{
+  position:absolute;
+  font-size:34px;
+  opacity:0.75;
+}
+.b1{top:12%;left:10%}
+.b2{top:18%;right:14%}
+.b3{bottom:14%;left:14%}
+.b4{bottom:18%;right:10%}
+.dial1-time{
+  position:absolute;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  font-size:44px;font-weight:bold;
+}
+.dial1-side{
+  position:absolute;
+  left:10px;top:50%;transform:translateY(-50%);
+  font-size:16px;
+  line-height:1.6;
+}
+/* 表盘2 赛博科技 */
+.dial-2{
+  background:#050816;
+  color:#38f0ff;
+}
+.cyber-line{
+  position:absolute;
+  border:1px solid #2299aa;
+  opacity:0.4;
+}
+.cyber-h{width:70%;height:1px;left:15%;top:50%}
+.cyber-v{height:70%;width:1px;top:15%;left:50%}
+.dial2-time{
+  position:absolute;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  font-size:42px;font-weight:bold;
+}
+.dial2-side{
+  position:absolute;
+  left:12px;top:50%;transform:translateY(-50%);
+  font-size:15px;
+  line-height:1.6;
+}
+/* 表盘3 机械指针 */
+.dial-3{
+  background:#121212;
+  color:#ddd;
+}
+.clock-center{
+  width:14px;height:14px;background:#fff;border-radius:50%;
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:4;
+}
+.clock-hand{
+  position:absolute;
+  bottom:50%;left:50%;
+  transform-origin:center bottom;
+  border-radius:4px;
+}
+.h-hand{
+  width:7px;height:70px;background:#fff;z-index:1;
+}
+.m-hand{
+  width:4px;height:100px;background:#eee;z-index:2;
+}
+.s-hand{
+  width:2px;height:110px;background:#f43f5e;z-index:3;
+}
+.tick-mark{
+  position:absolute;
+  left:50%;top:0;
+  transform-origin:center 150px;
+}
+.tick-big{
+  width:3px;height:16px;background:#fff;
+}
+.tick-small{
+  width:1px;height:7px;background:#777;
+}
+.dial3-info{
+  position:absolute;
+  bottom:24px;left:50%;transform:translateX(-50%);
+  font-size:14px;
+}
+/* 菜单样式 */
+.menu-item{
+  padding:11px 6px;
+  border-bottom:1px solid #333;
+  cursor:pointer;
+}
+.menu-item:active{background:#252525}
+.app-item{
+  padding:10px 4px;
+  display:flex;justify-content:space-between;
+  align-items:center;border-bottom:1px solid #333;
+}
+.btn{
+  padding:5px 9px;background:#2563eb;border-radius:4px;font-size:13px
+}
+.btn.uninstall{background:#dc2626}
+.setting-line{
+  padding:8px 2px;border-bottom:1px solid #333;font-size:14px;
+}
+/* 2048 */
+#game2048{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:5px;
+  width:224px;height:224px;margin:8px auto 0;
+}
+.cell{
+  background:#222;display:flex;align-items:center;justify-content:center;
+  font-weight:bold;border-radius:5px;font-size:19px
+}
+/* 木鱼 */
+.muyu-box{
+  width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  font-size:72px;cursor:pointer
+}
+</style>
+</head>
+<body>
+<div id="watchWrap">
+  <div class="strap strap-top"></div>
+  <div id="watch">
+    <div class="strap strap-bottom"></div>
+    <div id="screen">
+      <div class="page" id="pageDial">
+        <div class="dial-wrap dial-1" id="dialContent">
+          <div class="bear b1">🧸</div>
+          <div class="bear b2">🧸</div>
+          <div class="bear b3">🧸</div>
+          <div class="bear b4">🧸</div>
+          <div class="dial1-time" id="dialTime">00:00:00</div>
+          <div class="dial1-side" id="dialInfo">
+            <div id="dialBatt"></div>
+            <div id="dialDate"></div>
+          </div>
+        </div>
+      </div>
+      <div class="page" id="pageMenu">
+        <div class="back-btn">返回</div>
+        <div class="menu-item" data-target="pageApps">应用商店</div>
+        <div class="menu-item" data-target="pageSoft">软件</div>
+        <div class="menu-item" data-target="pageSetting">设置</div>
+      </div>
+      <div class="page" id="pageApps">
+        <div class="back-btn">返回</div>
+        <div class="app-item">
+          <span>2048</span>
+          <span class="btn" data-app="game2048">安装</span>
+        </div>
+        <div class="app-item">
+          <span>木鱼</span>
+          <span class="btn" data-app="muyu">安装</span>
+        </div>
+      </div>
+      <div class="page" id="pageSoft">
+        <div class="back-btn">返回</div>
+      </div>
+      <div class="page" id="pageSetting">
+        <div class="back-btn">返回</div>
+        <div class="setting-line">系统型号：Milk Pro</div>
+        <div class="setting-line">系统版本：V0.01</div>
+        <div class="setting-line" id="setBattery"></div>
+        <div class="setting-line" id="setDate"></div>
+        <div class="setting-line" id="upgradeTip"></div>
+      </div>
+      <div class="page" id="page2048">
+        <div class="back-btn">返回</div>
+        <div id="game2048"></div>
+      </div>
+      <div class="page" id="pageMuyu">
+        <div class="back-btn">返回</div>
+        <div class="muyu-box" id="muyuBtn">🥊<br><span id="muyuCount">0</span></div>
+      </div>
+    </div>
+    <div class="anim-overlay" id="animOverlay"></div>
+  </div>
+</div>
+
+<script>
+const watch = document.getElementById('watch');
+const screen = document.getElementById('screen');
+const animOverlay = document.getElementById('animOverlay');
+const dialContent = document.getElementById('dialContent');
+const dialTime = document.getElementById('dialTime');
+const dialBatt = document.getElementById('dialBatt');
+const dialDate = document.getElementById('dialDate');
+const setBattery = document.getElementById('setBattery');
+const setDate = document.getElementById('setDate');
+const upgradeTip = document.getElementById('upgradeTip');
+const pages = document.querySelectorAll('.page');
+const backBtns = document.querySelectorAll('.back-btn');
+
+let dialIndex = 0;
+const dialList = [
+  {type:"bear"},
+  {type:"cyber"},
+  {type:"clock"}
+];
+
+function renderDial(){
+  const d = dialList[dialIndex];
+  if(d.type === "bear"){
+    dialContent.className = "dial-wrap dial-1";
+    dialContent.innerHTML = `
+      <div class="bear b1">🧸</div>
+      <div class="bear b2">🧸</div>
+      <div class="bear b3">🧸</div>
+      <div class="bear b4">🧸</div>
+      <div class="dial1-time" id="dialTime">00:00:00</div>
+      <div class="dial1-side" id="dialInfo">
+        <div id="dialBatt"></div>
+        <div id="dialDate"></div>
+      </div>
+    `;
+  }else if(d.type === "cyber"){
+    dialContent.className = "dial-wrap dial-2";
+    dialContent.innerHTML = `
+      <div class="cyber-line cyber-h"></div>
+      <div class="cyber-line cyber-v"></div>
+      <div class="dial2-time" id="dialTime">00:00:00</div>
+      <div class="dial2-side" id="dialInfo">
+        <div id="dialBatt"></div>
+        <div id="dialDate"></div>
+      </div>
+    `;
+  }else if(d.type === "clock"){
+    dialContent.className = "dial-wrap dial-3";
+    let tickHtml = "";
+    for(let i=0;i<60;i++){
+      const deg = i*6;
+      if(i%5===0){
+        tickHtml += `<div class="tick-mark tick-big" style="transform:rotate(${deg}deg)"></div>`;
+      }else{
+        tickHtml += `<div class="tick-mark tick-small" style="transform:rotate(${deg}deg)"></div>`;
+      }
+    }
+    dialContent.innerHTML = `
+      ${tickHtml}
+      <div class="clock-hand h-hand" id="hHand"></div>
+      <div class="clock-hand m-hand" id="mHand"></div>
+      <div class="clock-hand s-hand" id="sHand"></div>
+      <div class="clock-center"></div>
+      <div class="dial3-info" id="dialInfo">
+        <span id="dialBatt"></span> | <span id="dialDate"></span>
+      </div>
+    `;
+  }
+}
+renderDial();
+
+function showPage(id){
+  pages.forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+showPage('pageDial');
+backBtns.forEach(btn=>{
+  btn.onclick = ()=>showPage('pageDial');
+})
+
+let powerOn = true;
+let battery = 100;
+let isLaptop = false;
+let installedApps = {};
+let isUpgrading = false;
+let rotateX = 0, rotateY = 0;
+let longPressTimer = null;
+const LONG_PRESS_TIME = 600;
+let bootAnimRunning = false;
+let shutAnimRunning = false;
+let clickTimer = null;
+let clickCount = 0;
+
+(async function detectBattery(){
+  if('getBattery' in navigator){
+    try{
+      const bat = await navigator.getBattery();
+      isLaptop = true;
+      function syncBat(){battery = Math.round(bat.level * 100);}
+      syncBat();
+      bat.addEventListener('levelchange',syncBat);
+    }catch(e){isLaptop=false;}
+  }
+})();
+function tickVirtualBattery(){
+  if(isLaptop || !powerOn || chargeHold || isUpgrading) return;
+  battery -= 5;
+  if(battery <= 0){
+    battery = 0;
+    doShutdown();
+  }
+}
+setInterval(tickVirtualBattery, 60*1000);
+
+let chargeHold = false;
+const CHARGE_FULL_MS = 5 * 60 * 1000;
+const CHARGE_STEP = 100 / (CHARGE_FULL_MS / 100);
+document.addEventListener('keydown',e=>{
+  if(e.key.toLowerCase() === 'w') chargeHold = true;
+  if(e.key.toLowerCase()==='a' || e.key === 'ArrowLeft'){
+    dialIndex = (dialIndex -1 + dialList.length) % dialList.length;
+    renderDial();
+  }
+  if(e.key.toLowerCase()==='d' || e.key === 'ArrowRight'){
+    dialIndex = (dialIndex +1) % dialList.length;
+    renderDial();
+  }
+})
+document.addEventListener('keyup',e=>{
+  if(e.key.toLowerCase() === 'w') chargeHold = false;
+})
+setInterval(()=>{
+  if(chargeHold && battery < 100){
+    battery += CHARGE_STEP;
+    if(battery>100) battery=100;
+    if(!powerOn && battery>0){
+      powerOn = true;
+      runBootAnim();
+    }
+  }
+},100);
+
+function runBootAnim(){
+  bootAnimRunning = true;
+  animOverlay.style.display='flex';
+  animOverlay.innerHTML = `<div class="boot-text">Milk Pro</div>`;
+  const t = animOverlay.querySelector('.boot-text');
+  setTimeout(()=>t.style.opacity='1',10);
+  setTimeout(()=>{
+    animOverlay.style.display='none';
+    bootAnimRunning=false;
+  },3000);
+}
+function runShutAnim(){
+  shutAnimRunning = true;
+  animOverlay.style.display='flex';
+  animOverlay.innerHTML = `<div class="shutdown-text">Milk</div>`;
+  setTimeout(()=>{
+    animOverlay.style.display='none';
+    shutAnimRunning=false;
+    screen.style.display='none';
+  },5000);
+}
+function doShutdown(){
+  if(isUpgrading) return;
+  powerOn = false;
+  runShutAnim();
+}
+function doBoot(){
+  if(battery <= 0) return;
+  powerOn = true;
+  screen.style.display='block';
+  runBootAnim();
+}
+
+watch.addEventListener('mousedown',()=>{
+  longPressTimer = setTimeout(()=>{
+    if(bootAnimRunning || shutAnimRunning) return;
+    if(powerOn) doShutdown();
+    else doBoot();
+  },LONG_PRESS_TIME);
+})
+watch.addEventListener('mouseup',(e)=>{
+  clearTimeout(longPressTimer);
+  if(!powerOn || bootAnimRunning || shutAnimRunning) return;
+  if(e.target.closest('.menu-item,.app-item,.btn,.back-btn,.cell,.muyu-box')) return;
+  clickCount++;
+  if(clickTimer) clearTimeout(clickTimer);
+  clickTimer = setTimeout(()=>{
+    if(clickCount === 1){
+      dialIndex = (dialIndex -1 + dialList.length) % dialList.length;
+    }else if(clickCount >=2){
+      dialIndex = (dialIndex +1) % dialList.length;
+    }
+    renderDial();
+    clickCount=0;
+  },280);
+})
+watch.addEventListener('mouseleave',()=>clearTimeout(longPressTimer));
+
+watchWrap.addEventListener('wheel',e=>{
+  e.preventDefault();
+  rotateY += e.deltaY * 0.15;
+  watch.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+})
+
+document.querySelectorAll('.app-item .btn').forEach(btn=>{
+  btn.onclick = function(){
+    const appId = this.dataset.app;
+    if(!installedApps[appId]){
+      installedApps[appId] = true;
+      this.innerText='卸载';
+      refreshSoftList();
+    }else{
+      delete installedApps[appId];
+      this.innerText='安装';
+      refreshSoftList();
+    }
+  }
+})
+function refreshSoftList(){
+  const softPage = document.getElementById('pageSoft');
+  softPage.innerHTML = `<div class="back-btn">返回</div>`;
+  softPage.querySelector('.back-btn').onclick=()=>showPage('pageDial');
+  if(installedApps.game2048){
+    const div = document.createElement('div');
+    div.className='menu-item';
+    div.innerText='2048';
+    div.onclick=()=>showPage('page2048');
+    softPage.appendChild(div);
+  }
+  if(installedApps.muyu){
+    const div = document.createElement('div');
+    div.className='menu-item';
+    div.innerText='木鱼';
+    div.onclick=()=>showPage('pageMuyu');
+    softPage.appendChild(div);
+  }
+}
+
+let muyuCount = 0;
+document.getElementById('muyuBtn').onclick = ()=>{
+  muyuCount++;
+  document.getElementById('muyuCount').innerText = muyuCount;
+}
+
+function init2048(){
+  const g = document.getElementById('game2048');
+  g.innerHTML = '';
+  for(let i=0;i<16;i++){
+    const c = document.createElement('div');
+    c.className='cell';
+    g.appendChild(c);
+  }
+}
+init2048();
+
+setInterval(()=>{
+  if(!powerOn || isUpgrading || bootAnimRunning || shutAnimRunning) return;
+  isUpgrading = true;
+  upgradeTip.innerText = '正在升级...';
+  setTimeout(()=>{
+    upgradeTip.innerText = '升级完成，即将关机';
+    setTimeout(()=>{
+      isUpgrading=false;
+      doShutdown();
+    },600);
+  },60*1000);
+},3*60*1000);
+
+function updateTime(){
+  if(!powerOn) return;
+  const d = new Date();
+  const h = String(d.getHours()).padStart(2,'0');
+  const m = String(d.getMinutes()).padStart(2,'0');
+  const s = String(d.getSeconds()).padStart(2,'0');
+  if(document.getElementById('dialTime')) document.getElementById('dialTime').innerText = `${h}:${m}:${s}`;
+  const batStr = isLaptop ? `电池：${battery}%` : `虚拟电池：${battery}%`;
+  const dateStr = d.toLocaleDateString();
+  if(document.getElementById('dialBatt')) document.getElementById('dialBatt').innerText = batStr;
+  if(document.getElementById('dialDate')) document.getElementById('dialDate').innerText = dateStr;
+  setBattery.innerText = batStr;
+  setDate.innerText = '日期：'+dateStr;
+
+  if(dialList[dialIndex].type === "clock"){
+    const hDeg = (d.getHours()%12)*30 + d.getMinutes()*0.5;
+    const mDeg = d.getMinutes()*6 + d.getSeconds()*0.1;
+    const sDeg = d.getSeconds()*6;
+    const hHand = document.getElementById('hHand');
+    const mHand = document.getElementById('mHand');
+    const sHand = document.getElementById('sHand');
+    if(hHand) hHand.style.transform = `rotate(${hDeg}deg)`;
+    if(mHand) mHand.style.transform = `rotate(${mDeg}deg)`;
+    if(sHand) sHand.style.transform = `rotate(${sDeg}deg)`;
+  }
+}
+setInterval(updateTime, 1000);
+updateTime();
+
+watch.addEventListener('contextmenu',e=>{
+  e.preventDefault();
+  if(!powerOn || bootAnimRunning || shutAnimRunning) return;
+  showPage('pageMenu');
+})
+</script>
+</body>
+</html>
